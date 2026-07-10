@@ -59,7 +59,7 @@ test.describe('Jeep Collection Landing Page', () => {
       await expect(card.locator('.text-link')).toHaveText('DISCOVER');
       const photo = card.locator('.model-photo');
       const bg = await photo.evaluate(el => getComputedStyle(el).backgroundImage);
-      expect(bg).toContain('loremflickr.com');
+      expect(bg).toContain('upload.wikimedia.org');
     }
   });
 
@@ -186,7 +186,7 @@ test.describe('Jeep Collection Landing Page', () => {
   test('hero image background is set to an unsplash URL', async ({ page }) => {
     await page.goto(PAGE_URL);
     const bg = await page.locator('.hero-photo-band').evaluate(el => getComputedStyle(el).backgroundImage);
-    expect(bg).toContain('loremflickr.com');
+    expect(bg).toContain('wikimedia');
   });
 
   test('every background-image URL returns HTTP 200 (images actually load)', async ({ page, request }) => {
@@ -200,10 +200,15 @@ test.describe('Jeep Collection Landing Page', () => {
     }), IMAGE_SELECTORS);
     expect(urls.every(Boolean)).toBe(true);
     for (const url of urls) {
-      const res = await request.get(url);
+      let res = await request.get(url);
+      for (let attempt = 0; attempt < 3 && res.status() === 429; attempt++) {
+        await page.waitForTimeout(5000);
+        res = await request.get(url);
+      }
       expect(res.status(), `expected 200 for ${url}`).toBe(200);
       const contentType = res.headers()['content-type'] || '';
       expect(contentType).toContain('image');
+      await page.waitForTimeout(1000);
     }
   });
 
